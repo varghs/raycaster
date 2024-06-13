@@ -10,6 +10,7 @@ use sdl2::pixels::PixelFormatEnum;
 use sdl2::rect::Rect;
 use sdl2::render::{Texture, TextureCreator};
 use sdl2::video::Window;
+use std::borrow::Borrow;
 use std::path::Path;
 use std::time::Duration;
 
@@ -17,10 +18,9 @@ const SCREEN_WIDTH: u32 = 800;
 const SCREEN_HEIGHT: u32 = 600;
 const MAP_WIDTH: usize = 24;
 const MAP_HEIGHT: usize = 24;
-const CEILING_COLOR: Color = Color::RGB(129, 175, 201);
-const FLOOR_COLOR: Color = Color::RGB(102, 79, 66);
-const WALL_COLOR: Color = Color::RGB(44, 71, 34);
-const TINTED_WALL_COLOR: Color = Color::RGB(30, 48, 23);
+const CEILING_COLOR: Color = Color::RGB(255, 30, 0);
+const FLOOR_COLOR: Color = Color::RGB(70, 79, 66);
+
 #[rustfmt::skip]
 const MAP: [[i32; MAP_WIDTH]; MAP_HEIGHT] = [
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -35,14 +35,14 @@ const MAP: [[i32; MAP_WIDTH]; MAP_HEIGHT] = [
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
@@ -65,19 +65,19 @@ fn main() {
         .unwrap();
 
     let mut canvas = window.into_canvas().build().unwrap();
+    let texture_creator = canvas.texture_creator();
+
     sdl_context.mouse().show_cursor(false);
     let mut event_pump = sdl_context.event_pump().unwrap();
     let texture_path = Path::new("./assets/wall.png");
-    texture_path.display();
     let wall_texture = load_texture(texture_path);
-    let texture_width = wall_texture.width() as f64;
-    let texture_height = wall_texture.height() as f64;
 
     // Load floor texture
     let floor_texture_path = Path::new("./assets/floor.png");
     let floor_texture = load_texture(floor_texture_path);
-    let floor_tex_width = floor_texture.width() as f64;
-    let floor_tex_height = floor_texture.height() as f64;
+
+    let ceiling_texture_path = Path::new("./assets/ceiling.png");
+    let ceiling_texture = load_texture(ceiling_texture_path);
 
     let mut pos_x = 22.0;
     let mut pos_y = 12.0;
@@ -85,8 +85,10 @@ fn main() {
     let mut dir_y = 0.0;
     let mut plane_x = 0.0;
     let mut plane_y = 0.66;
-    let move_speed = 0.4;
-    let rot_speed = 0.03;
+    let move_speed = 0.1;
+    let rot_speed = 0.01;
+
+    let mut buffer: Vec<u8> = vec![0; (SCREEN_WIDTH * SCREEN_HEIGHT * 4) as usize];
 
     'running: loop {
         for event in event_pump.poll_iter() {
@@ -125,20 +127,35 @@ fn main() {
                     }
                 }
                 Keycode::A => {
-                    let old_dir_x = dir_x;
-                    dir_x = dir_x * f64::cos(rot_speed) - dir_y * f64::sin(rot_speed);
-                    dir_y = old_dir_x * f64::sin(rot_speed) + dir_y * f64::cos(rot_speed);
-                    let old_plane_x = plane_x;
-                    plane_x = plane_x * f64::cos(rot_speed) - plane_y * f64::sin(rot_speed);
-                    plane_y = old_plane_x * f64::sin(rot_speed) + plane_y * f64::cos(rot_speed);
+                    // Move the player left
+                    let new_pos_x: f64 = ((pos_x - dir_y * move_speed) as f64)
+                        .max(0.0)
+                        .min(MAP_WIDTH as f64 - 1.0);
+                    let new_pos_y = ((pos_y + dir_x * move_speed) as f64)
+                        .max(0.0)
+                        .min(MAP_HEIGHT as f64 - 1.0);
+                    if MAP[new_pos_x as usize][(pos_y) as usize] == 0 {
+                        pos_x = new_pos_x;
+                    }
+                    if MAP[pos_x as usize][new_pos_y as usize] == 0 {
+                        pos_y = new_pos_y;
+                    }
                 }
                 Keycode::D => {
-                    let old_dir_x = dir_x;
-                    dir_x = dir_x * f64::cos(-rot_speed) - dir_y * f64::sin(-rot_speed);
-                    dir_y = old_dir_x * f64::sin(-rot_speed) + dir_y * f64::cos(-rot_speed);
-                    let old_plane_x = plane_x;
-                    plane_x = plane_x * f64::cos(-rot_speed) - plane_y * f64::sin(-rot_speed);
-                    plane_y = old_plane_x * f64::sin(-rot_speed) + plane_y * f64::cos(-rot_speed);
+                    // Move the player right
+                    let new_pos_x = (pos_x + dir_y * move_speed)
+                        .max(0.0)
+                        .min(MAP_WIDTH as f64 - 1.0);
+                    let new_pos_y = (pos_y - dir_x * move_speed)
+                        .max(0.0)
+                        .min(MAP_HEIGHT as f64 - 1.0);
+
+                    if MAP[new_pos_x as usize][(pos_y) as usize] == 0 {
+                        pos_x = new_pos_x;
+                    }
+                    if MAP[pos_x as usize][new_pos_y as usize] == 0 {
+                        pos_y = new_pos_y;
+                    }
                 }
                 _ => {}
             }
@@ -173,6 +190,69 @@ fn main() {
         );
         canvas.set_draw_color(Color::RGB(0, 0, 0));
         canvas.clear();
+
+        buffer.fill(0);
+
+        // FLOOR CASTING
+        for y in 0..SCREEN_HEIGHT {
+            // rayDir for leftmost ray (x = 0) and rightmost ray (x = w)
+            let ray_dir_x0 = dir_x - plane_x;
+            let ray_dir_y0 = dir_y - plane_y;
+            let ray_dir_x1 = dir_x + plane_x;
+            let ray_dir_y1 = dir_y + plane_y;
+
+            // Current y position compared to the center of the screen (the horizon)
+            let p = y as f64 - SCREEN_HEIGHT as f64 / 2.0;
+
+            // Vertical position of the camera.
+            let pos_z = 0.5 * SCREEN_HEIGHT as f64;
+
+            // Horizontal distance from the camera to the floor for the current row.
+            // 0.5 is the z position exactly in the middle between floor and ceiling.
+            let row_distance = pos_z / p;
+
+            // calculate the real world step vector we have to add for each x (parallel to camera plane)
+            // adding step by step avoids multiplications with a weight in the inner loop
+            let floor_step_x = row_distance * (ray_dir_x1 - ray_dir_x0) / SCREEN_WIDTH as f64;
+            let floor_step_y = row_distance * (ray_dir_y1 - ray_dir_y0) / SCREEN_WIDTH as f64;
+
+            // real world coordinates of the leftmost column. This will be updated as we step to the right.
+            let mut floor_x = pos_x + row_distance * ray_dir_x0;
+            let mut floor_y = pos_y + row_distance * ray_dir_y0;
+
+            for x in 0..SCREEN_WIDTH {
+                // the cell coord is simply got from the integer parts of floor_x and floor_y
+                let cell_x = floor_x as i32;
+                let cell_y = floor_y as i32;
+
+                // get the texture coordinate from the fractional part
+                let tx = (floor_texture.width() as f64 * (floor_x - cell_x as f64)) as u32
+                    & (floor_texture.width() - 1);
+
+                let ty = (floor_texture.height() as f64 * (floor_y - cell_y as f64)) as u32
+                    & (floor_texture.height() - 1);
+
+                floor_x += floor_step_x;
+                floor_y += floor_step_y;
+
+                // floor
+                let floor_color = floor_texture.get_pixel(tx, ty);
+                let buffer_index = ((y as u32 * SCREEN_WIDTH + x) * 4) as usize;
+
+                buffer[buffer_index] = floor_color[0];
+                buffer[buffer_index + 1] = floor_color[1];
+                buffer[buffer_index + 2] = floor_color[2];
+
+                // ceiling (symmetrical, at screen_height - y - 1 instead of y)
+                let ceiling_color = ceiling_texture.get_pixel(tx, ty);
+                let buffer_index =
+                    (((SCREEN_HEIGHT - y - 1) as u32 * SCREEN_WIDTH + x) * 4) as usize;
+
+                buffer[buffer_index] = ceiling_color[0];
+                buffer[buffer_index + 1] = ceiling_color[1];
+                buffer[buffer_index + 2] = ceiling_color[2];
+            }
+        }
 
         for x in 0..SCREEN_WIDTH {
             let camera_x = 2.0 * x as f64 / SCREEN_WIDTH as f64 - 1.0;
@@ -235,73 +315,81 @@ fn main() {
             let draw_end =
                 (line_height / 2 + SCREEN_HEIGHT as i32 / 2).min(SCREEN_HEIGHT as i32 - 1);
 
-            let color = if side == 1 {
-                Color::RGB(255, 0, 0)
-            } else {
-                Color::RGB(128, 0, 0)
-            };
-
-            // Draw the ceiling (draw_start above the wall)
-            canvas.set_draw_color(CEILING_COLOR);
-            if draw_start > 0 {
-                canvas
-                    .draw_line(
-                        sdl2::rect::Point::new(x as i32, 0),
-                        sdl2::rect::Point::new(x as i32, draw_start - 1),
-                    )
-                    .unwrap();
-            }
-
-            // Draw the floor (draw_end below the wall)
-            canvas.set_draw_color(FLOOR_COLOR);
-            if draw_end < SCREEN_HEIGHT as i32 - 1 {
-                canvas
-                    .draw_line(
-                        sdl2::rect::Point::new(x as i32, draw_end + 1),
-                        sdl2::rect::Point::new(x as i32, SCREEN_HEIGHT as i32 - 1),
-                    )
-                    .unwrap();
-            }
-
-            // Draw the wall
-            let color = if side == 1 {
-                TINTED_WALL_COLOR
-            } else {
-                WALL_COLOR
-            };
-
             // Calculate texture X coordinate
-            let wall_x = if side == 0 {
+            let mut texture_x = if side == 0 {
                 pos_y + perp_wall_dist * ray_dir_y
             } else {
                 pos_x + perp_wall_dist * ray_dir_x
             };
-            let wall_x = (wall_x * texture_width) as usize % texture_width as usize;
 
-            // Calculate Y coordinate to sample from
-            let mut tex_y = ((((draw_start as f64 + draw_end as f64) / 2.0
-                - SCREEN_HEIGHT as f64 / 2.0)
-                / line_height as f64)
-                * texture_height as f64) as usize;
+            texture_x -= texture_x.floor(); // Get the fractional part
+            let texture_x = (texture_x as f64 * wall_texture.width() as f64) as i32
+                % wall_texture.width() as i32;
 
-            // Adjust Y coordinate for textures
-            if tex_y >= texture_height as usize {
-                tex_y = texture_height as usize - 1;
+            // Draw the wall slice with texture
+            for y in draw_start..draw_end {
+                let d = y * 256 - SCREEN_HEIGHT as i32 * 128 + line_height * 128;
+                let tex_y = ((d * wall_texture.height() as i32) / line_height) / 256;
+                let pixel = wall_texture.get_pixel(texture_x as u32, tex_y as u32);
+                let buffer_index = ((y as u32 * SCREEN_WIDTH + x) * 4) as usize;
+
+                buffer[buffer_index] = pixel[0];
+                buffer[buffer_index + 1] = pixel[1];
+                buffer[buffer_index + 2] = pixel[2];
+                // buffer[buffer_index + 3] = 255; // Alpha channel
+                // canvas.draw_point((x as i32, y)).unwrap();
             }
 
-            // Fetch texel color
-            let texel_color = wall_texture.get_pixel(wall_x as u32, tex_y as u32);
+            // for y in draw_end..SCREEN_HEIGHT as i32 {
+            //     let buffer_index = ((y as u32 * SCREEN_WIDTH + x) * 4) as usize;
 
-            // Draw textured wall slice
-            canvas.set_draw_color(Color::RGB(texel_color[0], texel_color[1], texel_color[2]));
-            canvas
-                .draw_line(
-                    sdl2::rect::Point::new(x as i32, draw_start),
-                    sdl2::rect::Point::new(x as i32, draw_end),
-                )
-                .unwrap();
-            // canvas.set_draw_color(color);
+            //     buffer[buffer_index] = FLOOR_COLOR.r;
+            //     buffer[buffer_index + 1] = FLOOR_COLOR.g;
+            //     buffer[buffer_index + 2] = FLOOR_COLOR.b;
+            // }
+
+            // FLOOR CASTING
+
+            // for y in 0..draw_start {
+            //     let buffer_index = ((y as u32 * SCREEN_WIDTH + x) * 4) as usize;
+
+            //     buffer[buffer_index] = CEILING_COLOR.r;
+            //     buffer[buffer_index + 1] = CEILING_COLOR.g;
+            //     buffer[buffer_index + 2] = CEILING_COLOR.b;
+            // }
+
+            // // Draw the ceiling (draw_start above the wall)
+            // canvas.set_draw_color(CEILING_COLOR);
+            // if draw_start > 0 {
+            //     canvas
+            //         .draw_line(
+            //             sdl2::rect::Point::new(x as i32, 0),
+            //             sdl2::rect::Point::new(x as i32, draw_start - 1),
+            //         )
+            //         .unwrap();
+            // }
+
+            // // Draw the floor (draw_end below the wall)
+            // canvas.set_draw_color(FLOOR_COLOR);
+            // if draw_end < SCREEN_HEIGHT as i32 - 1 {
+            //     canvas
+            //         .draw_line(
+            //             sdl2::rect::Point::new(x as i32, draw_end + 1),
+            //             sdl2::rect::Point::new(x as i32, SCREEN_HEIGHT as i32 - 1),
+            //         )
+            //         .unwrap();
+            // }
         }
+
+        let mut texture = texture_creator
+            .create_texture_streaming(PixelFormatEnum::ARGB8888, SCREEN_WIDTH, SCREEN_HEIGHT)
+            .unwrap();
+        texture
+            .update(None, &buffer, (SCREEN_WIDTH * 4) as usize)
+            .unwrap();
+
+        // Copy the texture to the canvas
+        canvas.copy(&texture, None, None).unwrap();
         canvas.present();
         ::std::thread::sleep(Duration::from_millis(16));
     }
